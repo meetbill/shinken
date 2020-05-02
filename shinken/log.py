@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2009-2014:
@@ -27,6 +26,7 @@ import logging
 import sys
 import os
 import stat
+import inspect
 from logging import Handler, Formatter, StreamHandler, NOTSET, FileHandler
 from logging.handlers import TimedRotatingFileHandler
 
@@ -39,7 +39,6 @@ except (SyntaxError, ImportError), exp:
     def cprint(s, color='', end=''):
         print s
 
-
 # obj = None
 # name = None
 human_timestamp_log = False
@@ -47,8 +46,10 @@ human_timestamp_log = False
 _brokhandler_ = None
 
 
-defaultFormatter = Formatter('[%(created)i] %(levelname)s: %(message)s')
-defaultFormatter_named = Formatter('[%(created)i] %(levelname)s: [%(name)s] %(message)s')
+#defaultFormatter = Formatter('[%(created)i] %(levelname)s: %(message)s')
+defaultFormatter = Formatter('%(levelname)s: %(asctime)s: %(thread)d %(message)s')
+#defaultFormatter_named = Formatter('[%(created)i] %(levelname)s: [%(name)s] %(message)s')
+defaultFormatter_named = Formatter('%(levelname)s: %(asctime)s: %(thread)d [%(name)s] %(message)s')
 humanFormatter = Formatter('[%(asctime)s] %(levelname)s: %(message)s', '%a %b %d %H:%M:%S %Y')
 humanFormatter_named = Formatter('[%(asctime)s] %(levelname)s: [%(name)s] %(message)s',
                                  '%a %b %d %H:%M:%S %Y')
@@ -101,6 +102,8 @@ class Log(logging.Logger):
         self.pre_log_buffer = []
         self.log_set = log_set
 
+    def _get_backframe_info(self, f):
+        return f.f_back.f_code.co_filename, f.f_back.f_lineno, f.f_back.f_code.co_name
 
     def setLevel(self, level):
         """ Set level of logger and handlers.
@@ -194,44 +197,75 @@ class Log(logging.Logger):
 
     # Stack logs if we don't open a log file so we will be able to flush them
     # Stack max 500 logs (no memory leak please...)
-    def _stack(self, level, args, kwargs):
+    def _stack(self, level, msg, args, kwargs):
         if self.log_set:
             return
-        self.pre_log_buffer.append((level, args, kwargs))
+        self.pre_log_buffer.append((level, msg, args, kwargs))
         if len(self.pre_log_buffer) > 500:
             self.pre_log_buffer = self.pre_log_buffer[2:]
 
 
     # Ok, we are opening a log file, flush all the logs now
     def _destack(self):
-        for (level, args, kwargs) in self.pre_log_buffer:
+        for (level, msg, args, kwargs) in self.pre_log_buffer:
             f = getattr(logging.Logger, level, None)
             if f is None:
                 self.warning('Missing level for a log? %s', level)
                 continue
-            f(self, *args, **kwargs)
+            f(self, msg, *args, **kwargs)
 
 
-    def debug(self, *args, **kwargs):
-        self._stack('debug', args, kwargs)
-        logging.Logger.debug(self, *args, **kwargs)
+    def debug(self, msg, *args, **kwargs):
+        f = inspect.currentframe()
+        filename, lineno, funcname = self._get_backframe_info(f)
+        cur_info = "[file]:{filename} [line]:{lineno} [func]:{func} ".format(filename=filename, lineno=lineno, func=funcname)
+        msg = cur_info + msg
+        self._stack('debug', msg, args, kwargs)
+        logging.Logger.debug(self, msg, *args, **kwargs)
 
 
-    def info(self, *args, **kwargs):
-        self._stack('info', args, kwargs)
-        # super(logging.Logger, self).info(*args, **kwargs)
-        logging.Logger.info(self, *args, **kwargs)
+    def info(self, msg, *args, **kwargs):
+        f = inspect.currentframe()
+        filename, lineno, funcname = self._get_backframe_info(f)
+        cur_info = "[file]:{filename} [line]:{lineno} [func]:{func} ".format(filename=filename, lineno=lineno, func=funcname)
+        msg = cur_info + msg
+        self._stack('info', msg, args, kwargs)
+        logging.Logger.info(self, msg, *args, **kwargs)
 
 
 
-    def warning(self, *args, **kwargs):
-        self._stack('warning', args, kwargs)
-        logging.Logger.warning(self, *args, **kwargs)
+    def warning(self, msg, *args, **kwargs):
+        f = inspect.currentframe()
+        filename, lineno, funcname = self._get_backframe_info(f)
+        cur_info = "[file]:{filename} [line]:{lineno} [func]:{func} ".format(filename=filename, lineno=lineno, func=funcname)
+        msg = cur_info + msg
+        self._stack('warning', msg, args, kwargs)
+        logging.Logger.warning(self, msg, *args, **kwargs)
 
 
-    def error(self, *args, **kwargs):
-        self._stack('error', args, kwargs)
-        logging.Logger.error(self, *args, **kwargs)
+    def error(self, msg, *args, **kwargs):
+        f = inspect.currentframe()
+        filename, lineno, funcname = self._get_backframe_info(f)
+        cur_info = "[file]:{filename} [line]:{lineno} [func]:{func} ".format(filename=filename, lineno=lineno, func=funcname)
+        msg = cur_info + msg
+        self._stack('error', msg, args, kwargs)
+        logging.Logger.error(self, msg, *args, **kwargs)
+
+
+    def debug_trace(self, msg, *args, **kwargs):
+        stack = inspect.stack()
+        msg = msg + "\n" + "[call stack]:"
+        for i in range(1, len(stack) ):       # "1" : stack[0] 是调用 stack() 处的 frame_record, 丢弃.
+            filename = stack[i][1]
+            lineno = stack[i][2]
+            funcName = stack[i][3]
+            code = stack[i][4][0]
+            msg=msg +"\n" + '\t\t<frame %d>:%s, line:%d  func:%s' % (i - 1, filename, lineno, code[0 : -1] )
+
+        logging.Logger.debug(self, msg, *args, **kwargs)
+
+
+
 
 
 # --- create the main logger ---

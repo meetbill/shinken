@@ -27,4 +27,4 @@ BIN="$DIR"/../bin
 ETC="$DIR"/../etc
 
 echo "Stopping scheduler"
-kill $(cat /var/run/shinken/schedulerd.pid)
+kill $(cat ./data/schedulerd.pid)

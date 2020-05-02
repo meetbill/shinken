@@ -16,6 +16,11 @@ Shinken is backwards-compatible with the Nagios configuration standard
 and plugins. It works on any operating system and architecture that
 supports Python, which includes Windows, GNU/Linux and FreeBSD.
 
+本项目基于 Shinken 做一些改造
+
+> * 日志格式
+> * 无需部署到系统环境目录（部署到系统环境目录有时候需要 root 权限）
+
 Requirements
 ============
 

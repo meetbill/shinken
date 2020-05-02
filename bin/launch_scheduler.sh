@@ -23,8 +23,8 @@
 
 
 DIR="$(cd $(dirname "$0"); pwd)"
-BIN="$DIR"/../shinken/bin
+BIN="$DIR"
 ETC="$DIR"/../etc
 
 echo "Launching Scheduler (that is only in charge of scheduling)"
-"$BIN"/shinken_scheduler.py -d -c "$ETC"/daemons/schedulerd.ini
+"$BIN"/shinken-scheduler -d -c "$ETC"/daemons/schedulerd.ini
