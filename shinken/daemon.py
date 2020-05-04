@@ -505,7 +505,8 @@ class Daemon(object):
             # If the directory is missing, try to create it for me
             if not os.path.exists(self.workdir):
                 self.__create_directory(self.workdir)
-            os.chdir(self.workdir)
+            # cancel chdir
+            # os.chdir(self.workdir)
         except Exception, e:
             raise InvalidWorkDir(e)
         self.debug_output.append("Successfully changed to workdir: %s" % (self.workdir))
