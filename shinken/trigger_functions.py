@@ -44,7 +44,7 @@ class declared(object):
         trigger_functions[n] = f
 
     def __call__(self, *args):
-        logger.debug("Calling %s with arguments %s", self.f.func_name, args)
+        logger.debug("Calling {func} with arguments {args}".format(func=self.f.func_name, args=args))
         return self.f(*args)
 
 @declared
@@ -101,11 +101,11 @@ def set_value(obj_ref, output=None, perfdata=None, return_code=None):
     if return_code is None:
         return_code = obj.state_id
 
-    logger.debug("[trigger] Setting %s %s %s for object %s",
-                 output,
-                 perfdata,
-                 return_code,
-                 obj.get_full_name())
+    logger.debug("[trigger] Setting {output} {perfdata} {return_code} for object {name}".format(
+                 output=output,
+                 perfdata=perfdata,
+                 return_code=return_code,
+                 name=obj.get_full_name()))
 
     if perfdata:
         output = output + ' | ' + perfdata
@@ -218,7 +218,7 @@ def get_objects(ref):
         elts = name.split('/', 1)
         hname = elts[0]
         sdesc = elts[1]
-    logger.debug("[trigger get_objects] Look for %s %s", hname, sdesc)
+    logger.debug("[trigger get_objects] Look for {hname} {sdesc}".format(hname=hname, sdesc=sdesc))
     res = []
     hosts = []
     services = []
@@ -232,7 +232,7 @@ def get_objects(ref):
         hname = hname.replace('*', '.*')
         p = re.compile(hname)
         for h in objs['hosts']:
-            logger.debug("[trigger] Compare %s with %s", hname, h.get_name())
+            logger.debug("[trigger] Compare {hname} with {get_name}".format(hname=hname, get_name=h.get_name()))
             if p.search(h.get_name()):
                 hosts.append(h)
 
@@ -249,9 +249,9 @@ def get_objects(ref):
             sdesc = sdesc.replace('*', '.*')
             p = re.compile(sdesc)
             for s in h.services:
-                logger.debug("[trigger] Compare %s with %s", s.service_description, sdesc)
+                logger.debug("[trigger] Compare {service_description} with {sdesc}".format(service_description=s.service_description,sdesc=sdesc))
                 if p.search(s.service_description):
                     services.append(s)
 
-    logger.debug("Found the following services: %s", services)
+    logger.debug("Found the following services: {services}".format(services=services))
     return services

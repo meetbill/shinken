@@ -420,7 +420,8 @@ class HTTPDaemon(object):
                         # increase the stats timers
                         for (k, _t) in lst:
                             statsmgr.timing('http.%s.%s' % (fname, k), _t, 'perf')
-        
+
+                        logger.info("[api]:{func}, [args]:{args} [cost]:{cost}".format(func=fname, args=json.dumps(d), cost=calling_time))
                         return j
     
     

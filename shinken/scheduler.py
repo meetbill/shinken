@@ -186,7 +186,7 @@ class Scheduler(object):
             # we must relink them
             t0 = time.time()
             self.conf.late_linkify()
-            logger.debug("Late command relink in %d", time.time() - t0)
+            logger.debug("Late command relink in {cost}".format(cost = (time.time() - t0)))
 
         # self.status_file = StatusFile(self)
         #  External status file
@@ -215,7 +215,7 @@ class Scheduler(object):
         for i in self.recurrent_works:
             (name, f, old_tick) = self.recurrent_works[i]
             if name == f_name:
-                logger.debug("Changing the tick to %d for the function %s", new_tick, name)
+                logger.debug("Changing the tick to {tick} for the function {name}".format(tick=new_tick, name=name))
                 self.recurrent_works[i] = (name, f, new_tick)
 
 
@@ -235,7 +235,7 @@ class Scheduler(object):
     def dump_objects(self):
         d = tempfile.gettempdir()
         p = os.path.join(d, 'scheduler-obj-dump-%d' % time.time())
-        logger.info('Opening the DUMP FILE %s', p)
+        logger.info('Opening the DUMP FILE {file}'.format(file=p))
         try:
             f = open(p, 'w')
             f.write('Scheduler DUMP at %d\n' % time.time())
@@ -253,20 +253,20 @@ class Scheduler(object):
                 f.write(s)
             f.close()
         except Exception, exp:
-            logger.error("Error in writing the dump file %s : %s", p, str(exp))
+            logger.error("Error in writing the dump file {file} : {exp}".format(file=p, exp=str(exp)))
 
 
     def dump_config(self):
         d = tempfile.gettempdir()
         p = os.path.join(d, 'scheduler-conf-dump-%d' % time.time())
-        logger.info('Opening the DUMP FILE %s', p)
+        logger.info('Opening the DUMP FILE {file}'.format(file=p))
         try:
             f = open(p, 'w')
             f.write('Scheduler config DUMP at %d\n' % time.time())
             self.conf.dump(f)
             f.close()
         except Exception, exp:
-            logger.error("Error in writing the dump file %s : %s", p, str(exp))
+            logger.error("Error in writing the dump file {file} : {exp}".format(file=p, exp=str(exp)))
 
     # Load the external command
     def load_external_command(self, e):
@@ -280,7 +280,7 @@ class Scheduler(object):
 
 
     def run_external_command(self, command):
-        logger.debug("scheduler resolves command '%s'", command)
+        logger.debug("scheduler resolves command '{command}'".format(command=command))
         ext_cmd = ExternalCommand(command)
         self.external_command.resolve_command(ext_cmd)
 
@@ -381,20 +381,23 @@ class Scheduler(object):
     def hook_point(self, hook_name):
         for inst in self.sched_daemon.modules_manager.instances:
             full_hook_name = 'hook_' + hook_name
-            logger.debug("hook_point: %s: %s %s",
-                         inst.get_name(), str(hasattr(inst, full_hook_name)), hook_name)
+            logger.debug("hook_point: {get_name}: {full_hook_name} {hook_name}".format(
+                         get_name=inst.get_name(),
+                         full_hook_name=str(hasattr(inst, full_hook_name)),
+                         hook_name=hook_name))
 
             if hasattr(inst, full_hook_name):
                 f = getattr(inst, full_hook_name)
                 try:
                     f(self)
                 except Exception, exp:
-                    logger.error("The instance %s raise an exception %s."
-                                 "I disable it and set it to restart it later",
-                                 inst.get_name(), str(exp))
+                    logger.error("The instance {get_name} raise an exception {exp}."
+                            "I disable it and set it to restart it later".format(
+                                get_name=inst.get_name(),
+                                exp=str(exp)))
                     output = cStringIO.StringIO()
                     traceback.print_exc(file=output)
-                    logger.error("Exception trace follows: %s", output.getvalue())
+                    logger.error("Exception trace follows: {output}".format(output=output.getvalue()))
                     output.close()
                     self.sched_daemon.modules_manager.set_to_restart(inst)
 
@@ -421,7 +424,7 @@ class Scheduler(object):
             to_del_checks = [c for c in self.checks.values() if c.id < id_max - max_checks]
             nb_checks_drops = len(to_del_checks)
             if nb_checks_drops > 0:
-                logger.info("I have to del some checks (%d)..., sorry", nb_checks_drops)
+                logger.info("I have to del some checks ({nb_checks_drops})..., sorry".format(nb_checks_drops=nb_checks_drops))
             for c in to_del_checks:
                 i = c.id
                 elt = c.ref
@@ -468,8 +471,10 @@ class Scheduler(object):
         statsmgr.incr("scheduler.actions.dropped", nb_actions_drops, "queue")
 
         if nb_checks_drops != 0 or nb_broks_drops != 0 or nb_actions_drops != 0:
-            logger.warning("We drop %d checks, %d broks and %d actions",
-                           nb_checks_drops, nb_broks_drops, nb_actions_drops)
+            logger.warning("We drop {nb_checks_drops} checks, {nb_broks_drops} broks and {nb_actions_drops} actions".format(
+                nb_checks_drops=nb_checks_drops,
+                nb_broks_drops=nb_broks_drops,
+                nb_actions_drops=nb_actions_drops))
 
 
     # For tunning purpose we use caches but we do not want them to explode
@@ -704,21 +709,25 @@ class Scheduler(object):
 
                 # If we' ve got a problem with the notification, raise a Warning log
                 if timeout:
-                    logger.warning("Contact %s %s notification command '%s ' "
-                                   "timed out after %d seconds",
-                                   self.actions[c.id].contact.contact_name,
-                                   self.actions[c.id].ref.__class__.my_type,
-                                   self.actions[c.id].command,
-                                   int(execution_time))
+                    logger.warning("Contact {contact_name} {my_type} notification command '{command} ' "
+                            "timed out after {execution_time} seconds".format(
+                                   contact_name=self.actions[c.id].contact.contact_name,
+                                   my_type=self.actions[c.id].ref.__class__.my_type,
+                                   command=self.actions[c.id].command,
+                                   execution_time=int(execution_time))
+                                )
                 elif c.exit_status != 0:
-                    logger.warning("The notification command '%s' raised an error "
-                                   "(exit code=%d): '%s'", c.command, c.exit_status, c.output)
+                    logger.warning("The notification command '{command}' raised an error "
+                            "(exit code={exit_status}): '{output}'".format(
+                                command=c.command,
+                                exit_status=c.exit_status,
+                                output=c.output))
 
             except KeyError, exp:  # bad number for notif, not that bad
-                logger.warning('put_results:: get unknown notification : %s ', str(exp))
+                logger.warning('put_results:: get unknown notification : {exp} '.format(exp=str(exp)))
 
             except AttributeError, exp:  # bad object, drop it
-                logger.warning('put_results:: get bad notification : %s ', str(exp))
+                logger.warning('put_results:: get bad notification :{exp}'.format(exp=str(exp)))
         elif c.is_a == 'check':
             try:
                 if c.status == 'timeout':
@@ -742,11 +751,11 @@ class Scheduler(object):
                 _type = 'event handler'
                 if c.is_snapshot:
                     _type = 'snapshot'
-                logger.warning("%s %s command '%s ' timed out after %d seconds" %
-                               (self.actions[c.id].ref.__class__.my_type.capitalize(),
-                                _type,
-                                self.actions[c.id].command,
-                                int(c.execution_time)))
+                logger.warning("{action} {action_type} command '{command}' timed out after {execution_time} seconds".format(
+                        action = self.actions[c.id].ref.__class__.my_type.capitalize(),
+                        action_type = _type,
+                        command = self.actions[c.id].command,
+                        execution_time = int(c.execution_time)))
 
             # If it's a snapshot we should get the output an export it
             if c.is_snapshot:
@@ -754,7 +763,7 @@ class Scheduler(object):
                 b = old_action.ref.get_snapshot_brok(old_action.output, old_action.exit_status)
                 self.add(b)
         else:
-            logger.error("The received result type in unknown! %s", str(c.is_a))
+            logger.error("The received result type in unknown! {msg}".format(msg=str(c.is_a)))
 
 
     # Get the good tabs for links regarding to the kind. If unknown, return None
@@ -780,7 +789,7 @@ class Scheduler(object):
         # Get good links tab for looping..
         links = self.get_links_from_type(type)
         if links is None:
-            logger.debug("Unknown '%s' type for connection!", type)
+            logger.debug("Unknown '{type}' type for connection!".format(type=type))
             return
 
         # We want only to initiate connections to the passive
@@ -796,14 +805,14 @@ class Scheduler(object):
         # Ok, we can now update it
         links[id]['last_connection'] = time.time()
 
-        logger.debug("Init connection with %s", links[id]['uri'])
+        logger.debug("Init connection with {uri}".format(uri = links[id]['uri']))
 
         uri = links[id]['uri']
         try:
             links[id]['con'] = HTTPClient(uri=uri, strong_ssl=links[id]['hard_ssl_name_check'])
             con = links[id]['con']
         except HTTPExceptions, exp:
-            logger.warning("Connection problem to the %s %s: %s", type, links[id]['name'], str(exp))
+            logger.warning("Connection problem to the {type} {name}: {exp}".format(type=type, name=links[id]['name'], exp=str(exp)))
             links[id]['con'] = None
             return
 
@@ -811,22 +820,22 @@ class Scheduler(object):
             # initial ping must be quick
             con.get('ping')
         except HTTPExceptions, exp:
-            logger.warning("Connection problem to the %s %s: %s", type, links[id]['name'], str(exp))
+            logger.warning("Connection problem to the {type} {name}: {exp}".format(type=type, name=links[id]['name'], exp=str(exp)))
             links[id]['con'] = None
             return
         except KeyError, exp:
-            logger.warning("The %s '%s' is not initialized: %s", type, links[id]['name'], str(exp))
+            logger.warning("The {type} '{name}' is not initialized: {exp}".format(type=type, name=links[id]['name'], exp=str(exp)))
             links[id]['con'] = None
             return
 
-        logger.info("Connection OK to the %s %s", type, links[id]['name'])
+        logger.info("Connection OK to the {type} {name}".format(type=type, name=links[id]['name']))
 
 
     # We should push actions to our passives satellites
     def push_actions_to_passives_satellites(self):
         # We loop for our passive pollers or reactionners
         for p in filter(lambda p: p['passive'], self.pollers.values()):
-            logger.debug("I will send actions to the poller %s", str(p))
+            logger.debug("I will send actions to the poller {poller}".format(poller=str(p)))
             con = p['con']
             poller_tags = p['poller_tags']
             if con is not None:
@@ -834,15 +843,15 @@ class Scheduler(object):
                 lst = self.get_to_run_checks(True, False, poller_tags, worker_name=p['name'])
                 try:
                     # initial ping must be quick
-                    logger.debug("Sending %s actions", len(lst))
+                    logger.debug("Sending {lst} actions".format(lst=lst))
                     con.post('push_actions', {'actions': lst, 'sched_id': self.instance_id})
                     self.nb_checks_send += len(lst)
                 except HTTPExceptions, exp:
-                    logger.warning("Connection problem to the %s %s: %s", type, p['name'], str(exp))
+                    logger.warning("Connection problem to the {type} {name} {exp}".format(type=type, name=p['name'], exp=str(exp)))
                     p['con'] = None
                     return
                 except KeyError, exp:
-                    logger.warning("The %s '%s' is not initialized: %s", type, p['name'], str(exp))
+                    logger.warning("The {type} '{name}' is not initialized: {exp}".format(type=type, name=p['name'], exp=str(exp)) )
                     p['con'] = None
                     return
             else:  # no connection? try to reconnect
@@ -851,7 +860,7 @@ class Scheduler(object):
         # TODO:factorize
         # We loop for our passive reactionners
         for p in filter(lambda p: p['passive'], self.reactionners.values()):
-            logger.debug("I will send actions to the reactionner %s", str(p))
+            logger.debug("I will send actions to the reactionner {poller}".format(poller=str(p)))
             con = p['con']
             reactionner_tags = p['reactionner_tags']
             if con is not None:
@@ -861,15 +870,15 @@ class Scheduler(object):
                                              worker_name=p['name'])
                 try:
                     # initial ping must be quick
-                    logger.debug("Sending %d actions", len(lst))
+                    logger.debug("Sending {lst} actions".format(lst=len(lst)))
                     con.post('push_actions', {'actions': lst, 'sched_id': self.instance_id})
                     self.nb_checks_send += len(lst)
                 except HTTPExceptions, exp:
-                    logger.warning("Connection problem to the %s %s: %s", type, p['name'], str(exp))
+                    logger.warning("Connection problem to the {type} {name}: {exp}".format(type=type, name=p['name'], exp=str(exp)))
                     p['con'] = None
                     return
                 except KeyError, exp:
-                    logger.warning("The %s '%s' is not initialized: %s", type, p['name'], str(exp))
+                    logger.warning("The {type} '{name}' is not initialized: {exp}".format(type=type,name=p['name'], exp=str(exp)))
                     p['con'] = None
                     return
             else:  # no connection? try to reconnect
@@ -880,7 +889,7 @@ class Scheduler(object):
     def get_actions_from_passives_satellites(self):
         # We loop for our passive pollers
         for p in [p for p in self.pollers.values() if p['passive']]:
-            logger.debug("I will get actions from the poller %s", str(p))
+            logger.debug("I will get actions from the poller {poller}".format(poller=str(p)))
             con = p['con']
             poller_tags = p['poller_tags']
             if con is not None:
@@ -900,23 +909,22 @@ class Scheduler(object):
                     try:
                         results = cPickle.loads(results)
                     except Exception, exp:
-                        logger.error('Cannot load passive results from satellite %s : %s',
-                                     p['name'], str(exp))
+                        logger.error('Cannot load passive results from satellite {name} : {exp}'.format(name=p["name"]), exp=str(exp))
                         continue
 
                     nb_received = len(results)
                     self.nb_check_received += nb_received
-                    logger.debug("Received %d passive results", nb_received)
+                    logger.debug("Received {nb_received} passive results".format(nb_received=nb_received))
                     for result in results:
                         result.set_type_passive()
                     with self.waiting_results_lock:
                         self.waiting_results.extend(results)
                 except HTTPExceptions, exp:
-                    logger.warning("Connection problem to the %s %s: %s", type, p['name'], str(exp))
+                    logger.warning("Connection problem to the {type} {name}: {exp}".format(type=type, name=p["name"], exp=str(exp)))
                     p['con'] = None
                     continue
                 except KeyError, exp:
-                    logger.warning("The %s '%s' is not initialized: %s", type, p['name'], str(exp))
+                    logger.warning("The {type} '{name}' is not initialized: {exp}".format(type=type, name=p["name"], exp=str(exp)))
                     p['con'] = None
                     continue
             else:  # no connection, try reinit
@@ -924,7 +932,7 @@ class Scheduler(object):
 
         # We loop for our passive reactionners
         for p in [p for p in self.reactionners.values() if p['passive']]:
-            logger.debug("I will get actions from the reactionner %s", str(p))
+            logger.debug("I will get actions from the reactionner {p}".format(p=str(p)))
             con = p['con']
             reactionner_tags = p['reactionner_tags']
             if con is not None:
@@ -936,17 +944,17 @@ class Scheduler(object):
                     results = cPickle.loads(str(results))
                     nb_received = len(results)
                     self.nb_check_received += nb_received
-                    logger.debug("Received %d passive results", nb_received)
+                    logger.debug("Received {nb_received} passive results".format( nb_received = nb_received))
                     for result in results:
                         result.set_type_passive()
                     with self.waiting_results_lock:
                         self.waiting_results.extend(results)
                 except HTTPExceptions, exp:
-                    logger.warning("Connection problem to the %s %s: %s", type, p['name'], str(exp))
+                    logger.warning("Connection problem to the {type} {name}: {exp}".format(type=type, name=p["name"], exp=str(exp)))
                     p['con'] = None
                     return
                 except KeyError, exp:
-                    logger.warning("The %s '%s' is not initialized: %s", type, p['name'], str(exp))
+                    logger.warning("The {type} '{name}' is not initialized: {exp}".format(type=type, name=p["name"], exp=str(exp)))
                     p['con'] = None
                     return
             else:  # no connection, try reinit
@@ -1236,7 +1244,7 @@ class Scheduler(object):
                                 self.services, self.servicegroups)
 
         self.conf.skip_initial_broks = getattr(self.conf, 'skip_initial_broks', False)
-        logger.debug("Skipping initial broks? %s", str(self.conf.skip_initial_broks))
+        logger.debug("Skipping initial broks? {skip_initial_broks}".format(skip_initial_broks=str(self.conf.skip_initial_broks)))
         if not self.conf.skip_initial_broks:
             for tab in initial_status_types:
                 for i in tab:
