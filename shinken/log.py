@@ -47,11 +47,11 @@ _brokhandler_ = None
 
 
 #defaultFormatter = Formatter('[%(created)i] %(levelname)s: %(message)s')
-defaultFormatter = Formatter('%(levelname)s: %(asctime)s: %(thread)d %(message)s')
+defaultFormatter = Formatter('%(levelname)s: %(asctime)s: [pid]:%(process)d [tid]:%(thread)d %(message)s')
 #defaultFormatter_named = Formatter('[%(created)i] %(levelname)s: [%(name)s] %(message)s')
-defaultFormatter_named = Formatter('%(levelname)s: %(asctime)s: %(thread)d [%(name)s] %(message)s')
-humanFormatter = Formatter('[%(asctime)s] %(levelname)s: %(message)s', '%a %b %d %H:%M:%S %Y')
-humanFormatter_named = Formatter('[%(asctime)s] %(levelname)s: [%(name)s] %(message)s',
+defaultFormatter_named = Formatter('%(levelname)s: %(asctime)s: [pid]:%(process)d [tid]:%(thread)d [%(name)s] %(message)s')
+humanFormatter = Formatter('[%(asctime)s] %(levelname)s: [pid]:%(process)d [tid]:%(thread)d %(message)s', '%a %b %d %H:%M:%S %Y')
+humanFormatter_named = Formatter('[%(asctime)s] %(levelname)s: [pid]:%(process)d [tid]:%(thread)d [%(name)s] %(message)s',
                                  '%a %b %d %H:%M:%S %Y')
 nagFormatter = Formatter('[%(created)i] %(message)s')
 
