@@ -232,6 +232,9 @@ class Arbiter(Daemon):
                     del self.broks[:count]
                     statsmgr.incr('core.arbiter.broks.out', count, 'queue')
 
+                if self.interrupted:
+                    break
+
     # We must take external_commands from all satellites
     # like brokers, pollers, reactionners or receivers
     def get_external_commands_from_satellites(self):
